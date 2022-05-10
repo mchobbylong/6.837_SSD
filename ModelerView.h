@@ -27,19 +27,20 @@ public:
 
     ModelerView(int x, int y, int w, int h, const char *label = 0);
 
-    void loadModel(int argc, char* argv[]);
+    void loadModels(int argc, char* argv[]);
+	vector<int> getJointsPerModel();
 
     virtual ~ModelerView ();
 
     virtual int handle(int event);
-	virtual void update(int numJoints);
+	virtual void update();
     virtual void draw();
 
-	void updateJoints(int numJoints);
+	void updateJoints();
 	void drawAxes();
 
     Camera *m_camera;
-	SkeletalModel model;
+	vector<SkeletalModel> models;
 
 	bool m_drawAxes;
 	bool m_drawSkeleton;		// if false, the mesh is drawn instead.

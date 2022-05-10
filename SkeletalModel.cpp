@@ -4,6 +4,11 @@
 
 using namespace std;
 
+int SkeletalModel::getNumJoints()
+{
+	return m_joints.size();
+}
+
 void SkeletalModel::load(const char *skeletonFile, const char *meshFile, const char *attachmentsFile)
 {
 	loadSkeleton(skeletonFile);
@@ -26,7 +31,6 @@ void SkeletalModel::draw(Matrix4f cameraMatrix, bool skeletonVisible)
 	if( skeletonVisible )
 	{
 		drawJoints();
-
 		drawSkeleton();
 	}
 	else

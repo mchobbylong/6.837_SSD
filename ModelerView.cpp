@@ -8,10 +8,6 @@
 #include <GL/glu.h>
 #include <cstdio>
 
-// Accessing the values of sliders is a very lengthy function call.
-// We use a macro VAL() to shorten it.
-#define VAL(x) ( static_cast< float >( ModelerApplication::Instance()->GetControlValue( x ) ) )
-
 ModelerView::ModelerView(int x, int y, int w, int h,
              const char *label):Fl_Gl_Window(x, y, w, h, label)
 {
@@ -26,17 +22,29 @@ ModelerView::ModelerView(int x, int y, int w, int h,
 }
 
 // If you want to load files, etc, do that here.
-void ModelerView::loadModel(int argc, char* argv[])
+void ModelerView::loadModels(int argc, char* argv[])
 {
     glutInit( &argc, argv );
 
-    // Load the model based on the command-line arguments
-    string prefix = argv[ 1 ];
-    string skeletonFile = prefix + ".skel";
-    string meshFile = prefix + ".obj";
-    string attachmentsFile = prefix + ".attach";
+    // Load models based on the command-line arguments
+    for (int i = 1; i < argc; ++i) {
+        string prefix = argv[i];
+        string skeletonFile = prefix + ".skel";
+        string meshFile = prefix + ".obj";
+        string attachmentsFile = prefix + ".attach";
 
-    model.load(skeletonFile.c_str(), meshFile.c_str(), attachmentsFile.c_str());
+        SkeletalModel model = SkeletalModel();
+        model.load(skeletonFile.c_str(), meshFile.c_str(), attachmentsFile.c_str());
+        models.push_back(model);
+    }
+}
+
+vector<int> ModelerView::getJointsPerModel()
+{
+    auto nums = vector<int>();
+    for (auto model : models)
+        nums.push_back(model.getNumJoints());
+    return nums;
 }
 
 ModelerView::~ModelerView()
@@ -110,31 +118,37 @@ int ModelerView::handle( int event )
     return 1;
 }
 
-void ModelerView::update(int numJoints)
+void ModelerView::update()
 {
     // update the skeleton from sliders
-    updateJoints(numJoints);
+    updateJoints();
 
-    // Update the bone to world transforms for SSD.
-    model.updateCurrentJointToWorldTransforms();
+    for (auto model : models) {
+        // Update the bone to world transforms for SSD.
+        model.updateCurrentJointToWorldTransforms();
 
-    // update the mesh given the new skeleton
-    model.updateMesh();
+        // update the mesh given the new skeleton
+        model.updateMesh();
+    }
 }
 
-void ModelerView::updateJoints(int numJoints)
+void ModelerView::updateJoints()
 {
-    // Set translation of root joint
-    model.setRootTranslation(VAL(0), VAL(1), VAL(2));
+    auto app = ModelerApplication::Instance();
 
-    // Set transform (currently rotation only) of all joints
-    for (unsigned int jointNo = 1; jointNo < numJoints; jointNo++)
-    {
-        float rx = VAL( jointNo * 3 );
-        float ry = VAL( jointNo * 3 + 1 );
-        float rz = VAL( jointNo * 3 + 2 );
+    // Iterate each model
+    for (int modelIndex = 0, numModels = models.size(); modelIndex < numModels; ++modelIndex) {
+        auto model = models[modelIndex];
+        // Set translation of root joint
+        Vector3f ret = app->getJointToControlValues(modelIndex, 0, true);
+        model.setRootTranslation(ret[0], ret[1], ret[2]);
 
-        model.setJointTransform(jointNo - 1, rx, ry, rz);
+        // Set transform (currently rotation only) of all joints
+        for (int jointIndex = 0, numJoints = model.getNumJoints(); jointIndex < numJoints; jointIndex++)
+        {
+            ret = app->getJointToControlValues(modelIndex, jointIndex, false);
+            model.setJointTransform(jointIndex, ret[0], ret[1], ret[2]);
+        }
     }
 }
 
@@ -193,7 +207,8 @@ void ModelerView::draw()
         drawAxes();
     }
 
-    model.draw( m_camera->viewMatrix(), m_drawSkeleton );
+    for (auto model : models)
+        model.draw( m_camera->viewMatrix(), m_drawSkeleton );
 }
 
 void ModelerView::drawAxes()

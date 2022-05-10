@@ -9,44 +9,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-// CLASS ModelerControl METHODS
-
-ModelerControl::ModelerControl():m_minimum(0.0f), m_maximum(1.0f), m_stepsize(0.1f),
-m_value(0.0f)
-{
-}
-
-ModelerControl::ModelerControl(const char *name, float minimum,
-                   float maximum, float stepsize, float value)
-{
-    SetVals(name, minimum, maximum, stepsize, value);
-}
-
-ModelerControl::ModelerControl(const ModelerControl & o)
-{
-    operator=(o);
-}
-
-ModelerControl & ModelerControl::operator=(const ModelerControl & o)
-{
-    if (this != &o)
-    SetVals(o.m_name, o.m_minimum, o.m_maximum, o.m_stepsize,
-        o.m_value);
-    return *this;
-}
-
-void ModelerControl::SetVals(const char *name, float minimum,
-                 float maximum, float stepsize, float value)
-{
-    strncpy(m_name, name, 128);
-    m_minimum = minimum;
-    m_maximum = maximum;
-    m_stepsize = stepsize;
-    m_value = value;
-}
-
-
-// ****************************************************************************
 
 
 // Set the singleton initially to a NULL instance
@@ -62,57 +24,9 @@ ModelerApplication *ModelerApplication::Instance()
                       new ModelerApplication());
 }
 
-void ModelerApplication::Init( int argc, char* argv[],
-                              const ModelerControl controls[],
-                              unsigned numJoints, string jointNames[] )
+void ModelerApplication::Init( int argc, char* argv[], string jointNames[] )
 {
-    int i;
-
-    m_animating = false;
-    m_numJoints = numJoints;
-    m_numControls = numJoints * 3;
-
-    // ********************************************************
-    // Create the FLTK user interface
-    // ********************************************************
-
     m_ui = new ModelerUserInterface();
-
-    // Store pointers to the controls for manipulation
-    m_controlLabelBoxes = new Fl_Box *[m_numControls];
-    m_controlValueSliders = new Fl_Value_Slider *[m_numControls];
-
-    // Constants for user interface setup
-    const int textHeight = 20;
-    const int sliderHeight = 20;
-    const int packWidth = m_ui->m_controlsPack->w();
-
-    m_ui->m_controlsPack->begin();
-    // For each joint, add the corresponding selector to selection box
-    for (i = 0; i < numJoints; ++i)
-        m_ui->m_controlsBrowser->add(jointNames[i].c_str());
-
-    // For each control, add appropriate objects to the user interface
-    for (i = 0; i < m_numControls; i++) {
-        // Add the label (but make it invisible for now)
-        Fl_Box *box = new Fl_Box(0, 0, packWidth, textHeight, controls[i].m_name);
-        box->labelsize(10);
-        box->hide();
-        box->box(FL_FLAT_BOX);	// otherwise, Fl_Scroll messes up (ehsu)
-        m_controlLabelBoxes[i] = box;
-
-        // Add the slider (but make it invisible for now)
-        Fl_Value_Slider *slider = new Fl_Value_Slider(0, 0, packWidth, sliderHeight, 0);
-        slider->type(1);
-        slider->range(controls[i].m_minimum, controls[i].m_maximum);
-        slider->step(controls[i].m_stepsize);
-        slider->value(controls[i].m_value);
-        slider->hide();
-        m_controlValueSliders[i] = slider;
-        // Set slider callback
-        slider->callback((Fl_Callback *) ModelerApplication::SliderCallback);
-    }
-    m_ui->m_controlsPack->end();
 
     // Make sure that we remove the view from the
     // Fl_Group, otherwise, it'll blow up
@@ -120,13 +34,102 @@ void ModelerApplication::Init( int argc, char* argv[],
     m_ui->m_modelerWindow->remove(*(m_ui->m_modelerView));
     delete m_ui->m_modelerView;
 
+    // Load all models, then determine the number of controls
     m_ui->m_modelerWindow->begin();
 
     m_ui->m_modelerView = new ModelerView(0, 0, m_ui->m_modelerWindow->w(), m_ui->m_modelerWindow->h(), NULL);
-    m_ui->m_modelerView->loadModel(argc, argv);
+    m_ui->m_modelerView->loadModels(argc, argv);
 
     Fl_Group::current()->resizable(m_ui->m_modelerView);
     m_ui->m_modelerWindow->end();
+
+    // Initial state of animation
+    m_animating = false;
+
+    // ********************************************************
+    // Create the FLTK user interface
+    // ********************************************************
+
+
+    // Constants for user interface setup
+    const int textHeight = 20;
+    const int sliderHeight = 20;
+    const int packWidth = m_ui->m_controlsPack->w();
+
+    // Determine the total number of controls
+    vector<int> numJoints = m_ui->m_modelerView->getJointsPerModel();
+    m_numControls = 0;
+    for (int num : numJoints)
+        m_numControls += (num + 1) * 3; // Extra control for root joint translation
+
+    // Store pointers to the controls for manipulation
+    m_controlLabelBoxes = new Fl_Box *[m_numControls];
+    m_controlValueSliders = new Fl_Value_Slider *[m_numControls];
+
+    // Initialize controls for every model
+    int controlIndex = 0, selectorIndex = 1;
+    m_ui->m_controlsPack->begin();
+    for (int modelIndex = 0, numModels = numJoints.size(); modelIndex < numModels; ++modelIndex) {
+        // Note that we have an extra control for adjusting translation of the root joint, modelNumJoints is actually + 1
+        int modelNumJoints = numJoints[modelIndex] + 1;
+
+        // Add "root" selector (as a label only) for every model
+        m_ui->m_controlsBrowser->add(argv[modelIndex + 1]);
+        ++selectorIndex;
+
+        // Then for each joint, add appropriate objects to the user interface
+        char selectorLabel[256];
+        for (int jointIndex = 0; jointIndex < modelNumJoints; ++jointIndex) {
+            // Add a corresponding selector for the joint, label indented by 4 spaces
+            sprintf(selectorLabel, "    %s", jointNames[jointIndex].c_str());
+            m_ui->m_controlsBrowser->add(selectorLabel);
+
+            // Then add 3 sliders (each wrapped in a label box) for this joint
+            for (int k = 0; k < 3; ++k) {
+                // Determine name of the slider
+                char* buf = new char[256];
+                sprintf(buf, "%s %c", jointNames[jointIndex].c_str(), 'X' + k);
+
+                // Add a label box (as a wrapper for the slider), make it hidden for now
+                Fl_Box *box = new Fl_Box(0, 0, packWidth, textHeight, buf);
+                box->labelsize(10);
+                box->hide();
+                box->box(FL_FLAT_BOX);	// otherwise, Fl_Scroll messes up (ehsu)
+                m_controlLabelBoxes[controlIndex] = box;
+
+                // Add a slider, make it hidden for now
+                Fl_Value_Slider *slider = new Fl_Value_Slider(0, 0, packWidth, sliderHeight, 0);
+                slider->type(1);
+                // Determine params of the slider, according to the control target of this control (translation / rotation)
+                if (jointIndex == 0) {
+                    // Root joint translation
+                    slider->range(-1, 1);
+                    slider->step(0.05f);
+                } else {
+                    // Normal joint rotation
+                    slider->range(-M_PI, M_PI);
+                    slider->step(0.1f);
+                }
+                slider->value(0);
+                slider->hide();
+                m_controlValueSliders[controlIndex] = slider;
+                // Set slider callback
+                slider->callback((Fl_Callback *) ModelerApplication::SliderCallback);
+
+                // Finally, specify the mapping from this slider to its corresponding selector / joint
+                m_controlToSelector.push_back(selectorIndex);
+                m_controlToJoint.push_back(pair<int, int>(modelIndex, jointIndex == 0 ? 0 : jointIndex - 1));
+                m_controlIsTranslation.push_back(jointIndex == 0);
+
+                // Index for next control
+                ++controlIndex;
+            }
+
+            // Index for next selector
+            ++selectorIndex;
+        }
+    }
+    m_ui->m_controlsPack->end();
 }
 
 ModelerApplication::~ModelerApplication()
@@ -139,7 +142,7 @@ ModelerApplication::~ModelerApplication()
 
 int ModelerApplication::Run()
 {
-    if (m_numJoints == -1) {
+    if (m_numControls == -1) {
     fprintf(stderr,
         "ERROR: ModelerApplication must be initialized before Run()!\n");
     return -1;
@@ -174,27 +177,36 @@ bool ModelerApplication::GetAnimating()
 
 void ModelerApplication::ShowControl(int controlNumber)
 {
-    // Show 3 controls
-    for (int i = controlNumber * 3; i < (controlNumber + 1) * 3; ++i) {
-        m_controlLabelBoxes[i]->show();
-        m_controlValueSliders[i]->show();
-    }
-    m_ui->m_controlsWindow->redraw();
+    m_controlLabelBoxes[controlNumber]->show();
+    m_controlValueSliders[controlNumber]->show();
 }
 
 void ModelerApplication::HideControl(int controlNumber)
 {
-    // Hide 3 controls
-    for (int i = controlNumber * 3; i < (controlNumber + 1) * 3; ++i) {
-        m_controlLabelBoxes[i]->hide();
-        m_controlValueSliders[i]->hide();
-    }
-    m_ui->m_controlsWindow->redraw();
+    m_controlLabelBoxes[controlNumber]->hide();
+    m_controlValueSliders[controlNumber]->hide();
 }
 
 void ModelerApplication::SliderCallback(Fl_Slider *, void *)
 {
-    auto instance = ModelerApplication::Instance();
-    instance->m_ui->m_modelerView->update(instance->m_numJoints);
-    instance->m_ui->m_modelerView->redraw();
+    auto app = ModelerApplication::Instance();
+    app->m_ui->m_modelerView->update();
+    app->m_ui->m_modelerView->redraw();
+}
+
+int ModelerApplication::getControlToSelector(int controlIndex) {
+    return m_controlToSelector[controlIndex];
+}
+
+Vector3f ModelerApplication::getJointToControlValues(int modelIndex, int jointIndex, bool isTranslation) {
+    for (int i = 0; i < m_numControls; ++i) {
+        auto p = m_controlToJoint[i];
+        if (p.first == modelIndex && p.second == jointIndex && m_controlIsTranslation[i] == isTranslation)
+            return Vector3f(GetControlValue(i), GetControlValue(i + 1), GetControlValue(i + 2));
+    }
+    return NULL;
+}
+
+void ModelerApplication::redrawControlsWindow() {
+    m_ui->m_controlsWindow->redraw();
 }

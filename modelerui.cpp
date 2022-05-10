@@ -135,12 +135,15 @@ Fl_Menu_Item ModelerUserInterface::menu_m_controlsMenuBar[] = {
 Fl_Menu_Item* ModelerUserInterface::m_controlsAnimOnMenu = ModelerUserInterface::menu_m_controlsMenuBar + 7;
 
 inline void ModelerUserInterface::cb_m_controlsBrowser_i(Fl_Browser*, void*) {
-    for (int i=0; i<ModelerApplication::Instance()->m_numJoints; i++) {
-        if (m_controlsBrowser->selected(i+1))
-            ModelerApplication::Instance()->ShowControl(i);
+    auto app = ModelerApplication::Instance();
+    for (int i = 0, numControls = app->GetNumControls(); i < numControls; ++i) {
+        int selectorIndex = app->getControlToSelector(i);
+        if (m_controlsBrowser->selected(selectorIndex))
+            app->ShowControl(i);
         else
-            ModelerApplication::Instance()->HideControl(i);
+            app->HideControl(i);
     }
+    app->redrawControlsWindow();
 }
 void ModelerUserInterface::cb_m_controlsBrowser(Fl_Browser* o, void* v) {
     ((ModelerUserInterface*)(o->parent()->user_data()))->cb_m_controlsBrowser_i(o,v);
@@ -200,6 +203,6 @@ ModelerUserInterface::ModelerUserInterface() {
 
 void ModelerUserInterface::show() {
     m_controlsWindow->show();
-m_modelerWindow->show();
-m_modelerView->show();
+    m_modelerWindow->show();
+    m_modelerView->show();
 }

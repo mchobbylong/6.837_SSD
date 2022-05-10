@@ -74,6 +74,9 @@ public:
 	// and the current joint --> world transforms.
 	void updateMesh();
 
+	// Extra: get number of joints for the loaded model
+	int getNumJoints();
+
 private:
 
 	// pointer to the root joint

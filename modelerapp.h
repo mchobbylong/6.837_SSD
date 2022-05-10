@@ -6,23 +6,6 @@
 #define MODELERAPP_H
 
 #include "ModelerView.h"
-struct ModelerControl
-{
-    ModelerControl();
-    ModelerControl(const char *name, float minimum, float maximum,
-                   float stepsize, float value);
-    ModelerControl(const ModelerControl & o);
-    ModelerControl & operator=(const ModelerControl & o);
-
-    void SetVals(const char *name, float minimum, float maximum,
-                 float stepsize, float value);
-
-    char m_name[128];
-    float m_minimum;
-    float m_maximum;
-    float m_stepsize;
-    float m_value;
-};
 
 // Forward declarations for ModelerApplication
 class ModelerView;
@@ -42,7 +25,7 @@ public:
     static ModelerApplication *Instance();
 
     // Initialize the application; see sample models for usage
-    void Init( int argc, char* argv[], const ModelerControl controls[], unsigned numJoints, string jointNames[]);
+    void Init(int argc, char* argv[], string jointNames[]);
 
     // Starts the application, returns when application is closed
     int Run();
@@ -52,13 +35,20 @@ public:
     void SetControlValue(int controlNumber, double value);
     unsigned GetNumControls();
 
+    // Extra: Get the mapping from control to selector
+    int getControlToSelector(int controlIndex);
+    // Extra: Get the mapping from joint to control values
+    Vector3f getJointToControlValues(int modelIndex, int jointIndex, bool isTranslation);
+
     // [update 05/01/02]
     bool GetAnimating();
 
+    // Redraw trigger
+    void redrawControlsWindow();
 
 private:
     // Private for singleton
-    ModelerApplication() : m_numJoints(-1) { }
+    ModelerApplication() : m_numControls(-1) { }
     ModelerApplication(const ModelerApplication &) { }
 
     // The instance
@@ -71,7 +61,14 @@ private:
 
     ModelerUserInterface * m_ui;
 
-    int m_numJoints, m_numControls;
+    int m_numControls;
+
+    // Mapping between controls, selectors and joints
+    vector<pair<int, int>> m_controlToJoint;
+    vector<int> m_controlToSelector;
+
+    // Control type (translation / rotation)
+    vector<bool> m_controlIsTranslation;
 
     Fl_Box ** m_controlLabelBoxes;
     Fl_Value_Slider ** m_controlValueSliders;
