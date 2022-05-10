@@ -42,7 +42,7 @@ void ModelerView::loadModels(int argc, char* argv[])
 vector<int> ModelerView::getJointsPerModel()
 {
     auto nums = vector<int>();
-    for (auto model : models)
+    for (auto &model : models)
         nums.push_back(model.getNumJoints());
     return nums;
 }
@@ -123,7 +123,7 @@ void ModelerView::update()
     // update the skeleton from sliders
     updateJoints();
 
-    for (auto model : models) {
+    for (auto &model : models) {
         // Update the bone to world transforms for SSD.
         model.updateCurrentJointToWorldTransforms();
 
@@ -138,7 +138,7 @@ void ModelerView::updateJoints()
 
     // Iterate each model
     for (int modelIndex = 0, numModels = models.size(); modelIndex < numModels; ++modelIndex) {
-        auto model = models[modelIndex];
+        auto &model = models[modelIndex];
         // Set translation of root joint
         Vector3f ret = app->getJointToControlValues(modelIndex, 0, true);
         model.setRootTranslation(ret[0], ret[1], ret[2]);
@@ -207,7 +207,7 @@ void ModelerView::draw()
         drawAxes();
     }
 
-    for (auto model : models)
+    for (auto &model : models)
         model.draw( m_camera->viewMatrix(), m_drawSkeleton );
 }
 

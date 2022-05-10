@@ -210,6 +210,7 @@ void SkeletalModel::updateCurrentJointToWorldTransforms()
 	//
 	// This method should update each joint's bindWorldToJointTransform.
 	// You will need to add a recursive helper function to traverse the joint hierarchy.
+
 	recursiveUpdateCurrentJointToWorldTransforms(m_rootJoint, MatrixStack());
 }
 
