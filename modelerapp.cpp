@@ -17,7 +17,7 @@ m_value(0.0f)
 }
 
 ModelerControl::ModelerControl(const char *name, float minimum,
-			       float maximum, float stepsize, float value)
+                   float maximum, float stepsize, float value)
 {
     SetVals(name, minimum, maximum, stepsize, value);
 }
@@ -30,13 +30,13 @@ ModelerControl::ModelerControl(const ModelerControl & o)
 ModelerControl & ModelerControl::operator=(const ModelerControl & o)
 {
     if (this != &o)
-	SetVals(o.m_name, o.m_minimum, o.m_maximum, o.m_stepsize,
-		o.m_value);
+    SetVals(o.m_name, o.m_minimum, o.m_maximum, o.m_stepsize,
+        o.m_value);
     return *this;
 }
 
 void ModelerControl::SetVals(const char *name, float minimum,
-			     float maximum, float stepsize, float value)
+                 float maximum, float stepsize, float value)
 {
     strncpy(m_name, name, 128);
     m_minimum = minimum;
@@ -59,17 +59,18 @@ ModelerApplication *ModelerApplication::Instance()
     // Make a new instance if none exists, otherwise, return
     // the existing instance of the ModelerApplication
     return (m_instance) ? (m_instance) : (m_instance =
-					  new ModelerApplication());
+                      new ModelerApplication());
 }
 
 void ModelerApplication::Init( int argc, char* argv[],
-							  const ModelerControl controls[],
-							  unsigned numControls )
+                              const ModelerControl controls[],
+                              unsigned numJoints, string jointNames[] )
 {
     int i;
 
     m_animating = false;
-    m_numControls = numControls;
+    m_numJoints = numJoints;
+    m_numControls = numJoints * 3;
 
     // ********************************************************
     // Create the FLTK user interface
@@ -78,8 +79,8 @@ void ModelerApplication::Init( int argc, char* argv[],
     m_ui = new ModelerUserInterface();
 
     // Store pointers to the controls for manipulation
-    m_controlLabelBoxes = new Fl_Box *[numControls];
-    m_controlValueSliders = new Fl_Value_Slider *[numControls];
+    m_controlLabelBoxes = new Fl_Box *[m_numControls];
+    m_controlValueSliders = new Fl_Value_Slider *[m_numControls];
 
     // Constants for user interface setup
     const int textHeight = 20;
@@ -87,35 +88,34 @@ void ModelerApplication::Init( int argc, char* argv[],
     const int packWidth = m_ui->m_controlsPack->w();
 
     m_ui->m_controlsPack->begin();
+    // For each joint, add the corresponding selector to selection box
+    for (i = 0; i < numJoints; ++i)
+        m_ui->m_controlsBrowser->add(jointNames[i].c_str());
+
     // For each control, add appropriate objects to the user interface
     for (i = 0; i < m_numControls; i++) {
-	// Add the entry to the selection box
-	m_ui->m_controlsBrowser->add(controls[i].m_name);
+        // Add the label (but make it invisible for now)
+        Fl_Box *box = new Fl_Box(0, 0, packWidth, textHeight, controls[i].m_name);
+        box->labelsize(10);
+        box->hide();
+        box->box(FL_FLAT_BOX);	// otherwise, Fl_Scroll messes up (ehsu)
+        m_controlLabelBoxes[i] = box;
 
-	// Add the label (but make it invisible for now)
-	Fl_Box *box =
-	    new Fl_Box(0, 0, packWidth, textHeight, controls[i].m_name);
-	box->labelsize(10);
-	box->hide();
-	box->box(FL_FLAT_BOX);	// otherwise, Fl_Scroll messes up (ehsu)
-	m_controlLabelBoxes[i] = box;
-
-	// Add the slider (but make it invisible for now)
-	Fl_Value_Slider *slider =
-	    new Fl_Value_Slider(0, 0, packWidth, sliderHeight, 0);
-	slider->type(1);
-	slider->range(controls[i].m_minimum, controls[i].m_maximum);
-	slider->step(controls[i].m_stepsize);
-	slider->value(controls[i].m_value);
-	slider->hide();
-	m_controlValueSliders[i] = slider;
-	slider->
-	    callback((Fl_Callback *) ModelerApplication::SliderCallback);
+        // Add the slider (but make it invisible for now)
+        Fl_Value_Slider *slider = new Fl_Value_Slider(0, 0, packWidth, sliderHeight, 0);
+        slider->type(1);
+        slider->range(controls[i].m_minimum, controls[i].m_maximum);
+        slider->step(controls[i].m_stepsize);
+        slider->value(controls[i].m_value);
+        slider->hide();
+        m_controlValueSliders[i] = slider;
+        // Set slider callback
+        slider->callback((Fl_Callback *) ModelerApplication::SliderCallback);
     }
     m_ui->m_controlsPack->end();
 
     // Make sure that we remove the view from the
-    // Fl_Group, otherwise, it'll blow up 
+    // Fl_Group, otherwise, it'll blow up
     // THIS BUG FIXED 04-18-01 ehsu
     m_ui->m_modelerWindow->remove(*(m_ui->m_modelerView));
     delete m_ui->m_modelerView;
@@ -139,12 +139,12 @@ ModelerApplication::~ModelerApplication()
 
 int ModelerApplication::Run()
 {
-    if (m_numControls == -1) {
-	fprintf(stderr,
-		"ERROR: ModelerApplication must be initialized before Run()!\n");
-	return -1;
+    if (m_numJoints == -1) {
+    fprintf(stderr,
+        "ERROR: ModelerApplication must be initialized before Run()!\n");
+    return -1;
     }
-    
+
     // Just tell FLTK to go for it.
     Fl::visual(FL_RGB | FL_DOUBLE);
     m_ui->show();
@@ -174,20 +174,26 @@ bool ModelerApplication::GetAnimating()
 
 void ModelerApplication::ShowControl(int controlNumber)
 {
-    m_controlLabelBoxes[controlNumber]->show();
-    m_controlValueSliders[controlNumber]->show();
+    // Show 3 controls
+    for (int i = controlNumber * 3; i < (controlNumber + 1) * 3; ++i) {
+        m_controlLabelBoxes[i]->show();
+        m_controlValueSliders[i]->show();
+    }
     m_ui->m_controlsWindow->redraw();
 }
 
 void ModelerApplication::HideControl(int controlNumber)
 {
-    m_controlLabelBoxes[controlNumber]->hide();
-    m_controlValueSliders[controlNumber]->hide();
+    // Hide 3 controls
+    for (int i = controlNumber * 3; i < (controlNumber + 1) * 3; ++i) {
+        m_controlLabelBoxes[i]->hide();
+        m_controlValueSliders[i]->hide();
+    }
     m_ui->m_controlsWindow->redraw();
 }
 
 void ModelerApplication::SliderCallback(Fl_Slider *, void *)
 {
-	ModelerApplication::Instance()->m_ui->m_modelerView->update();
+    ModelerApplication::Instance()->m_ui->m_modelerView->update();
     ModelerApplication::Instance()->m_ui->m_modelerView->redraw();
 }

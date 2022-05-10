@@ -13,10 +13,10 @@ struct ModelerControl
                    float stepsize, float value);
     ModelerControl(const ModelerControl & o);
     ModelerControl & operator=(const ModelerControl & o);
-    
+
     void SetVals(const char *name, float minimum, float maximum,
                  float stepsize, float value);
-    
+
     char m_name[128];
     float m_minimum;
     float m_maximum;
@@ -37,48 +37,48 @@ class ModelerApplication
 {
 public:
     ~ModelerApplication();
-    
+
     // Fetch the global ModelerApplication instance
     static ModelerApplication *Instance();
-    
+
     // Initialize the application; see sample models for usage
-    void Init( int argc, char* argv[], const ModelerControl controls[], unsigned numControls);
-    
+    void Init( int argc, char* argv[], const ModelerControl controls[], unsigned numJoints, string jointNames[]);
+
     // Starts the application, returns when application is closed
     int Run();
-    
+
     // Get and set slider values.
     double GetControlValue(int controlNumber);
     void SetControlValue(int controlNumber, double value);
     unsigned GetNumControls();
-    
+
     // [update 05/01/02]
     bool GetAnimating();
 
- 
+
 private:
     // Private for singleton
-    ModelerApplication() : m_numControls(-1) { }
+    ModelerApplication() : m_numJoints(-1) { }
     ModelerApplication(const ModelerApplication &) { }
-    
+
     // The instance
     static ModelerApplication *m_instance;
-    
+
     friend class ModelerUserInterface;
-    
+
     void ShowControl(int controlNumber);
     void HideControl(int controlNumber);
-    
+
     ModelerUserInterface * m_ui;
-    
-    int m_numControls;
-    
+
+    int m_numJoints, m_numControls;
+
     Fl_Box ** m_controlLabelBoxes;
     Fl_Value_Slider ** m_controlValueSliders;
-    
+
     static void SliderCallback(Fl_Slider *, void *);
     static void RedrawLoop(void *);
-    
+
     // Just a flag for updates
     bool m_animating;
 };

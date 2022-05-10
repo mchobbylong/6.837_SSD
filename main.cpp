@@ -58,7 +58,8 @@ int main( int argc, char* argv[] )
 	(
 		argc, argv,
 		controls,
-		NUM_JOINTS*3
+		NUM_JOINTS,
+		jointNames
 	);
 
     // Run the modeler application.
