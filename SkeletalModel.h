@@ -52,6 +52,9 @@ public:
 	// changes in the slider values
 	void setJointTransform( int jointIndex, float rX, float rY, float rZ );
 
+	// Extra: Allow setting delta translation for root joint
+	void setRootTranslation(float dX, float dY, float dZ);
+
 	// Part 2: Skeletal Subspace Deformation
 
 	// 2.3. Implement SSD
@@ -75,6 +78,8 @@ private:
 
 	// pointer to the root joint
 	Joint* m_rootJoint;
+	// original translation of the root joint (for applying delta translation)
+	Vector3f m_rootTranslation;
 	// the list of joints.
 	std::vector< Joint* > m_joints;
 

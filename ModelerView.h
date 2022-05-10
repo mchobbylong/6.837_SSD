@@ -1,12 +1,12 @@
 // modelerview.h
 
 // This is the base class for your view window.  It contains
-// a camera control for your use.  The draw() function will 
+// a camera control for your use.  The draw() function will
 // set up default lighting and apply the projection.
-  
+
 #ifndef MODELERVIEW_H
 #define MODELERVIEW_H
-  
+
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -21,21 +21,21 @@ class ModelerView;
 
 using namespace std;
 
-class ModelerView : public Fl_Gl_Window 
+class ModelerView : public Fl_Gl_Window
 {
 public:
 
     ModelerView(int x, int y, int w, int h, const char *label = 0);
 
     void loadModel(int argc, char* argv[]);
-    
+
     virtual ~ModelerView ();
-    
+
     virtual int handle(int event);
-	virtual void update();
+	virtual void update(int numJoints);
     virtual void draw();
 
-	void updateJoints();
+	void updateJoints(int numJoints);
 	void drawAxes();
 
     Camera *m_camera;

@@ -52,8 +52,10 @@ void SkeletalModel::loadSkeleton( const char* filename )
 		m_joints.push_back(joint);
 		// joint->children = vector<Joint*>();
 		joint->transform = Matrix4f::translation(x, y, z);
-		if (parent == -1)
+		if (parent == -1) {
 			m_rootJoint = joint;
+			m_rootTranslation = Vector3f(x, y, z);
+		}
 		else
 			m_joints[parent]->children.push_back(joint);
 	}
@@ -69,11 +71,11 @@ void recursiveDrawJoints(Joint *joint, MatrixStack &stack)
 	// Draw current joint
 	glLoadMatrixf(stack.top());
 	glutSolidSphere(0.025f, 12, 12);
-	
+
 	// Iterate children joints recursively
 	for (auto childJoint : joint->children)
 		recursiveDrawJoints(childJoint, stack);
-	
+
 	// Pop out current joint
 	stack.pop();
 }
@@ -128,7 +130,7 @@ void recursiveDrawSkeletons(Joint* joint, MatrixStack& stack, bool hasParent)
 	// Draw skeletons between current joint and its every child
 	for (auto childJoint : joint->children)
 		recursiveDrawSkeletons(childJoint, stack, true);
-	
+
 	// Pop out current joint
 	stack.pop();
 }
@@ -146,8 +148,14 @@ void SkeletalModel::setJointTransform(int jointIndex, float rX, float rY, float 
 		rotateY = Matrix4f::rotateY(rY),
 		rotateZ = Matrix4f::rotateZ(rZ),
 		rotate = rotateX * rotateY * rotateZ;
-	
+
 	m_joints[jointIndex]->transform.setSubmatrix3x3(0, 0, rotate.getSubmatrix3x3(0, 0));
+}
+
+void SkeletalModel::setRootTranslation(float dX, float dY, float dZ)
+{
+	Vector3f updatedTranslation = m_rootTranslation + Vector3f(dX, dY, dZ);
+	m_rootJoint->transform.setCol(3, Vector4f(updatedTranslation, 1));
 }
 
 void recursiveComputeBindWorldToJointTransforms(Joint* joint, MatrixStack& stack)
@@ -214,14 +222,13 @@ void SkeletalModel::updateMesh()
 
 	for (int i = 0, numVertices = m_mesh.bindVertices.size(); i < numVertices; ++i) {
 		Vector4f weighted(0.f);
-		
+
 		for (int j = 0; j < numJoints; ++j)
 			weighted = weighted +
 				m_joints[j]->currentJointToWorldTransform
 				* m_joints[j]->bindWorldToJointTransform
 				* Vector4f(m_mesh.bindVertices[i], 1.0f) * m_mesh.attachments[i][j];
-		
+
 		m_mesh.currentVertices.push_back(weighted.xyz());
 	}
 }
-

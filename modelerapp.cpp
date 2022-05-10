@@ -194,6 +194,7 @@ void ModelerApplication::HideControl(int controlNumber)
 
 void ModelerApplication::SliderCallback(Fl_Slider *, void *)
 {
-    ModelerApplication::Instance()->m_ui->m_modelerView->update();
-    ModelerApplication::Instance()->m_ui->m_modelerView->redraw();
+    auto instance = ModelerApplication::Instance();
+    instance->m_ui->m_modelerView->update(instance->m_numJoints);
+    instance->m_ui->m_modelerView->redraw();
 }

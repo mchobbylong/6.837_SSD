@@ -39,13 +39,21 @@ int main( int argc, char* argv[] )
     // - step size for slider
     // - initial slider value
 
-	const int NUM_JOINTS = 18;
+	const int NUM_JOINTS = 19;
 
 	ModelerControl controls[ NUM_JOINTS*3 ];
-	string jointNames[NUM_JOINTS]={ "Root", "Chest", "Waist", "Neck", "Right hip", "Right leg", "Right knee", "Right foot", "Left hip", "Left leg", "Left knee", "Left foot", "Right collarbone", "Right shoulder", "Right elbow", "Left collarbone", "Left shoulder", "Left elbow" };
-	for(unsigned int i = 0; i < NUM_JOINTS; i++)
+	string jointNames[NUM_JOINTS]={ "Root (Translation)", "Root", "Chest", "Waist", "Neck", "Right hip", "Right leg", "Right knee", "Right foot", "Left hip", "Left leg", "Left knee", "Left foot", "Right collarbone", "Right shoulder", "Right elbow", "Left collarbone", "Left shoulder", "Left elbow" };
+
+	// Initialize controls for root translation
+	char buf[255];
+	for (int i = 0; i < 3; ++i) {
+		sprintf(buf, "%s %c", jointNames[0].c_str(), 'X' + i);
+		controls[i] = ModelerControl(buf, -1, 1, 0.05f, 0);
+	}
+
+	// Initialize controls for other joints
+	for (unsigned int i = 1; i < NUM_JOINTS; i++)
 	{
-		char buf[255];
 		sprintf(buf, "%s X", jointNames[i].c_str());
 		controls[i*3] = ModelerControl(buf, -M_PI, M_PI, 0.1f, 0);
 		sprintf(buf, "%s Y", jointNames[i].c_str());
