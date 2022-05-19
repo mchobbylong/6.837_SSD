@@ -207,6 +207,10 @@ Vector3f ModelerApplication::getJointToControlValues(int modelIndex, int jointIn
     return NULL;
 }
 
+bool ModelerApplication::getControlIsTranslation(int controlIndex) {
+    return m_controlIsTranslation[controlIndex];
+}
+
 void ModelerApplication::redrawControlsWindow() {
     m_ui->m_controlsWindow->redraw();
 }

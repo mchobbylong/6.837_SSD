@@ -39,6 +39,8 @@ public:
     int getControlToSelector(int controlIndex);
     // Extra: Get the mapping from joint to control values
     Vector3f getJointToControlValues(int modelIndex, int jointIndex, bool isTranslation);
+    // Extra: Check whether a control type is translation
+    bool getControlIsTranslation(int controlIndex);
 
     // [update 05/01/02]
     bool GetAnimating();

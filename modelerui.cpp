@@ -2,6 +2,17 @@
 
 #include "modelerui.h"
 
+void loadPosFile(string filename, vector<float> &posArray) {
+    // cout << filename << endl;
+    ifstream file(filename);
+    int index;
+    float val;
+    while (file >> index >> val) {
+        posArray.push_back(val);
+    }
+    file.close();
+}
+
 inline void ModelerUserInterface::cb_m_controlsWindow_i(Fl_Double_Window*, void*) {
     exit(0);
 }
@@ -11,40 +22,40 @@ void ModelerUserInterface::cb_m_controlsWindow(Fl_Double_Window* o, void* v) {
 
 inline void ModelerUserInterface::cb_Save_i(Fl_Menu_*, void*) {
     char *filename = NULL;
-filename = fl_file_chooser("Save BMP File", "*.bmp", NULL);
-if (filename)
-{
-    int x = m_modelerView->x();
-    int y = m_modelerView->y();
-    int w = m_modelerView->w();
-    int h = m_modelerView->h();
+    filename = fl_file_chooser("Save BMP File", "*.bmp", NULL);
+    if (filename)
+    {
+        int x = m_modelerView->x();
+        int y = m_modelerView->y();
+        int w = m_modelerView->w();
+        int h = m_modelerView->h();
 
-    m_modelerWindow->show();
-//	do {Sleep(10); }
-//	while (!m_modelerWindow->shown());
-//	m_modelerView->draw();
-    m_modelerView->make_current();
-m_modelerView->draw();
-
-
-    unsigned char *imageBuffer = new unsigned char[3*w*h];
-
-                // Tell openGL to read from the front buffer when capturing
-                // out paint strokes
-                glReadBuffer(GL_BACK);
-
-                glPixelStorei( GL_PACK_ALIGNMENT, 1 );
-                glPixelStorei( GL_PACK_ROW_LENGTH, w );
-
-                glReadPixels( 0, 0, w, h,
-                                GL_RGB, GL_UNSIGNED_BYTE,
-                                imageBuffer );
+        m_modelerWindow->show();
+    //	do {Sleep(10); }
+    //	while (!m_modelerWindow->shown());
+    //	m_modelerView->draw();
+        m_modelerView->make_current();
+        m_modelerView->draw();
 
 
-    writeBMP(filename, w,h, imageBuffer);
+        unsigned char *imageBuffer = new unsigned char[3*w*h];
 
-    delete [] imageBuffer;
-};
+        // Tell openGL to read from the front buffer when capturing
+        // out paint strokes
+        glReadBuffer(GL_BACK);
+
+        glPixelStorei( GL_PACK_ALIGNMENT, 1 );
+        glPixelStorei( GL_PACK_ROW_LENGTH, w );
+
+        glReadPixels( 0, 0, w, h,
+                        GL_RGB, GL_UNSIGNED_BYTE,
+                        imageBuffer );
+
+
+        writeBMP(filename, w,h, imageBuffer);
+
+        delete [] imageBuffer;
+    }
 }
 void ModelerUserInterface::cb_Save(Fl_Menu_* o, void* v) {
     ((ModelerUserInterface*)(o->parent()->user_data()))->cb_Save_i(o,v);
@@ -73,6 +84,7 @@ inline void ModelerUserInterface::cb_Open_i(Fl_Menu_*, void*) {
             ModelerApplication::Instance()->SetControlValue(controlNum, value);
         }
 
+        m_modelerView->update();
         m_modelerView->redraw();
     };
 }
@@ -91,7 +103,7 @@ inline void ModelerUserInterface::cb_Save1_i(Fl_Menu_*, void*) {
         float elevation, azimuth, dolly, twist;
 
         double value;
-                    for(int i = 0; i < ModelerApplication::Instance()->GetNumControls(); i++)
+        for(int i = 0; i < ModelerApplication::Instance()->GetNumControls(); i++)
         {
             value = ModelerApplication::Instance()->GetControlValue(i);
 
@@ -107,7 +119,7 @@ void ModelerUserInterface::cb_Save1(Fl_Menu_* o, void* v) {
 
 inline void ModelerUserInterface::cb_Exit_i(Fl_Menu_*, void*) {
     m_controlsWindow->hide();
-m_modelerWindow->hide();
+    m_modelerWindow->hide();
 }
 void ModelerUserInterface::cb_Exit(Fl_Menu_* o, void* v) {
     ((ModelerUserInterface*)(o->parent()->user_data()))->cb_Exit_i(o,v);
@@ -128,11 +140,77 @@ Fl_Menu_Item ModelerUserInterface::menu_m_controlsMenuBar[] = {
     {"Exit", 0,  (Fl_Callback*)ModelerUserInterface::cb_Exit, 0, 0, 0, 0, 14, 56},
     {0,0,0,0,0,0,0,0,0},
     {"Animate", 0,  0, 0, 64, 0, 0, 14, 56},
-    {"Enable", 0,  (Fl_Callback*)ModelerUserInterface::cb_m_controlsAnimOnMenu, 0, 2, 0, 0, 14, 56},
+    // {"Enable", 0,  (Fl_Callback*)ModelerUserInterface::cb_m_controlsAnimOnMenu, 0, 2, 0, 0, 14, 56},
+    {"Load Animation File", 0, (Fl_Callback*)ModelerUserInterface::cb_Load_Animate, 0, 128, 0, 0, 14, 56},
+    {"Play Animation Once", 0, (Fl_Callback*)ModelerUserInterface::cb_Play_Animate_Once, 0, 0, 0, 0, 14, 56},
+    {"Play Animation Repeatedly", 0, (Fl_Callback*)ModelerUserInterface::cb_Play_Animate_Repeat, 0, 0, 0, 0, 14, 56},
     {0,0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0,0}
 };
 Fl_Menu_Item* ModelerUserInterface::m_controlsAnimOnMenu = ModelerUserInterface::menu_m_controlsMenuBar + 7;
+
+void ModelerUserInterface::cb_Load_Animate_i(Fl_Menu_* o, void* v) {
+    auto app = ModelerApplication::Instance();
+    char *animFilename = fl_file_chooser("Load Animation File", "*.anim", NULL);
+
+    if (animFilename) {
+        ifstream file(animFilename);
+        string filename(animFilename), fileDir;
+        float nextSecs;
+        int nextFrames;
+        vector<float> currentFrameControls;
+
+        fileDir = "";
+        if (filename.find('/') != string::npos)
+            fileDir = filename.substr(0, filename.rfind('/') + 1);
+        m_numFrames = 1;
+        m_animateFrames.clear();
+
+        file >> filename;
+        loadPosFile(fileDir + filename, currentFrameControls);
+        m_animateFrames.push_back(currentFrameControls);
+        int numControls = currentFrameControls.size();
+        auto frameIntervals = vector<float>(numControls);
+        auto temp = vector<float>(numControls);
+        while (file >> nextSecs >> filename) {
+            nextFrames = (int) ceil(nextSecs * m_animateFps);
+            currentFrameControls.clear();
+            loadPosFile(fileDir + filename, currentFrameControls);
+            auto &lastFrameControls = m_animateFrames.back();
+            // Determine the interpolation interval for each control
+            for (int i = 0; i < numControls; ++i) {
+                if (app->getControlIsTranslation(i)) {
+                    frameIntervals[i] = (currentFrameControls[i] - lastFrameControls[i]) / nextFrames;
+                }
+                else {
+                    float lastVal = lastFrameControls[i] + M_PI,
+                        currentVal = currentFrameControls[i] + M_PI;
+                    frameIntervals[i] = (abs(currentVal - lastVal) < 2 * M_PI - abs(currentVal - lastVal)
+                        ? (currentVal - lastVal)
+                        : (currentVal - lastVal < 0 ? 2 * M_PI - currentVal + lastVal : currentVal - lastVal - 2 * M_PI)) / nextFrames;
+                }
+            }
+            // Insert interpolated frame controls
+            temp = lastFrameControls;
+            for (int i = 0; i < nextFrames; ++i) {
+                for (int j = 0; j < numControls; ++j)
+                    temp[j] += frameIntervals[j];
+                m_animateFrames.push_back(temp);
+            }
+            m_numFrames += nextFrames;
+        }
+        file.close();
+        cout << "Animation file loaded. " << m_numFrames << " frames in total." << endl;
+    }
+}
+
+void ModelerUserInterface::cb_Load_Animate(Fl_Menu_* o, void* v) {
+    ((ModelerUserInterface*)(o->parent()->user_data()))->cb_Load_Animate_i(o, v);
+}
+
+void ModelerUserInterface::cb_Play_Animate_Once(Fl_Menu_* o, void* v) {}
+
+void ModelerUserInterface::cb_Play_Animate_Repeat(Fl_Menu_* o, void* v) {}
 
 inline void ModelerUserInterface::cb_m_controlsBrowser_i(Fl_Browser*, void*) {
     auto app = ModelerApplication::Instance();
@@ -199,6 +277,9 @@ ModelerUserInterface::ModelerUserInterface() {
         }
         o->end();
     }
+
+    m_animateFps = 60;
+    m_numFrames = 0;
 }
 
 void ModelerUserInterface::show() {

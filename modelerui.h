@@ -41,6 +41,14 @@ public:
 private:
   inline void cb_m_controlsAnimOnMenu_i(Fl_Menu_*, void*);
   static void cb_m_controlsAnimOnMenu(Fl_Menu_*, void*);
+private:
+  unsigned int m_animateFps;
+  unsigned int m_numFrames;
+  vector<vector<float>> m_animateFrames;
+  void cb_Load_Animate_i(Fl_Menu_*, void*);
+  static void cb_Load_Animate(Fl_Menu_*, void*);
+  static void cb_Play_Animate_Once(Fl_Menu_*, void*);
+  static void cb_Play_Animate_Repeat(Fl_Menu_*, void*);
 public:
   Fl_Browser *m_controlsBrowser;
 private:
