@@ -88,7 +88,7 @@ void ModelerApplication::Init( int argc, char* argv[], string jointNames[] )
             for (int k = 0; k < 3; ++k) {
                 // Determine name of the slider
                 char* buf = new char[256];
-                sprintf(buf, "%s %c", jointNames[jointIndex].c_str(), 'X' + k);
+                sprintf(buf, "%s: %s %c", argv[modelIndex + 1], jointNames[jointIndex].c_str(), 'X' + k);
 
                 // Add a label box (as a wrapper for the slider), make it hidden for now
                 Fl_Box *box = new Fl_Box(0, 0, packWidth, textHeight, buf);
