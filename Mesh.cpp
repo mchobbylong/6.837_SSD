@@ -7,17 +7,26 @@ void Mesh::load( const char* filename )
 	// 2.1.1. load() should populate bindVertices, currentVertices, and faces
 
 	ifstream file(filename);
-	string action;
+	string action, value;
 	float x, y, z;
-	unsigned int n1, n2, n3;
+	unsigned int vertexIndex[3];
+	int loc;
 	while (file >> action) {
 		if (action == "v") {
 			file >> x >> y >> z;
 			bindVertices.push_back(Vector3f(x, y, z));
 		}
 		else if (action == "f") {
-			file >> n1 >> n2 >> n3;
-			faces.push_back(Tuple3u(n1, n2, n3));
+			for (int i = 0; i < 3; ++i) {
+				file >> value;
+				if ((loc = value.find('/')) != string::npos) {
+					// read the first number (vertex index) only
+					vertexIndex[i] = stoi(value.substr(0, loc));
+				}
+				else
+					vertexIndex[i] = stoi(value);
+			}
+			faces.push_back(Tuple3u(vertexIndex[0], vertexIndex[1], vertexIndex[2]));
 		}
 	}
 	file.close();
@@ -33,15 +42,15 @@ void Mesh::draw()
 	// Notice that since we have per-triangle normals
 	// rather than the analytical normals from
 	// assignment 1, the appearance is "faceted".
-	
+
 	glBegin(GL_TRIANGLES);
 	for (int i = 0, numFaces = faces.size(); i < numFaces; ++i) {
 		Vector3f vx = currentVertices[faces[i][0] - 1],
 			vy = currentVertices[faces[i][1] - 1],
 			vz = currentVertices[faces[i][2] - 1];
-		
+
 		Vector3f normal = Vector3f::cross(vy - vx, vz - vx).normalized();
-		
+
 		glNormal3f(normal[0], normal[1], normal[2]);
 		glVertex3f(vx[0], vx[1], vx[2]);
 		glVertex3f(vy[0], vy[1], vy[2]);
@@ -54,7 +63,7 @@ void Mesh::loadAttachments( const char* filename, int numJoints )
 {
 	// 2.2. Implement this method to load the per-vertex attachment weights
 	// this method should update m_mesh.attachments
-	
+
 	ifstream file(filename);
 	float weight;
 

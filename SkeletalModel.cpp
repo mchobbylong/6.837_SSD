@@ -86,6 +86,10 @@ void recursiveDrawJoints(Joint *joint, MatrixStack &stack)
 
 void SkeletalModel::drawJoints( )
 {
+	// If no joint is loaded, then does nothing
+	if (m_joints.size() == 0) return;
+
+
 	// Draw a sphere at each joint. You will need to add a recursive helper function to traverse the joint hierarchy.
 	//
 	// We recommend using glutSolidSphere( 0.025f, 12, 12 )
@@ -141,6 +145,8 @@ void recursiveDrawSkeletons(Joint* joint, MatrixStack& stack, bool hasParent)
 
 void SkeletalModel::drawSkeleton()
 {
+	// If no joint is loaded, then does nothing
+	if (m_joints.size() == 0) return;
 	// Draw boxes between the joints. You will need to add a recursive helper function to traverse the joint hierarchy.
 	recursiveDrawSkeletons(m_rootJoint, m_matrixStack, false);
 }
@@ -176,6 +182,10 @@ void recursiveComputeBindWorldToJointTransforms(Joint* joint, MatrixStack& stack
 
 void SkeletalModel::computeBindWorldToJointTransforms()
 {
+	// If no joint is loaded, then does nothing
+	if (m_joints.size() == 0) return;
+
+
 	// 2.3.1. Implement this method to compute a per-joint transform from
 	// world-space to joint space in the BIND POSE.
 	//
@@ -202,6 +212,10 @@ void recursiveUpdateCurrentJointToWorldTransforms(Joint* joint, MatrixStack& sta
 
 void SkeletalModel::updateCurrentJointToWorldTransforms()
 {
+	// If no joint is loaded, then does nothing
+	if (m_joints.size() == 0) return;
+
+
 	// 2.3.2. Implement this method to compute a per-joint transform from
 	// joint space to world space in the CURRENT POSE.
 	//

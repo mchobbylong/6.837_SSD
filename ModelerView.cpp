@@ -18,7 +18,7 @@ ModelerView::ModelerView(int x, int y, int w, int h,
     m_camera->SetCenter( Vector3f( 0.5, 0.5, 0.5 ) );
 
     m_drawAxes = true;
-    m_drawSkeleton = true;
+    m_drawSkeleton = false;
 }
 
 // If you want to load files, etc, do that here.
