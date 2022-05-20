@@ -34,6 +34,9 @@ struct Mesh
 	// one attachment weight per joint
 	std::vector< std::vector< float > > attachments;
 
+	// Extra: vertex coloring
+	std::vector<Vector3f> vertexColors;
+
 	// 2.1.1. load() should populate bindVertices, currentVertices, and faces
 	void load(const char *filename);
 

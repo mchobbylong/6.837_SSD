@@ -30,6 +30,12 @@ Triangle faces are colored according to the numbers of binding joints of the 3 v
 
 **Usage:** Press "c" to toggle vertex coloring when in "mesh view" mode.
 
+**Configuration:**
+
+Modify [L26 of `Mesh.cpp`](Mesh.cpp#26) to use different color schemes. Possible strings after `#ifdef`:
+- `COLOR_SCHEME_1`
+- `COLOR_SCHEME_2`
+
 ### Model Animation
 
 Users can create and display simple animations.
