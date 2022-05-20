@@ -58,4 +58,4 @@ Users can create and display simple animations.
 
 **Configuration:**
 
-The number of frames per second (FPS) can be changed by modifying [L309 of `modelerui.cpp`](modelerui.cpp#L309), which is the initial value of `m_animateFps` variable.
+The number of frames per second (FPS) can be changed by modifying [L311 of `modelerui.cpp`](modelerui.cpp#L311), which is the initial value of `m_animateFps` variable.

@@ -2,7 +2,7 @@
 
 #include "modelerui.h"
 
-void loadPosFile(string filename, vector<float> &posArray) {
+static inline void loadPosFile(string filename, vector<float> &posArray) {
     // cout << filename << endl;
     ifstream file(filename);
     int index;
@@ -216,6 +216,7 @@ void ModelerUserInterface::cb_Play_Animate_Once_i(Fl_Menu_* o, void* v) {
 
     // Notify timer function to play animation
     m_currentFrame = 0;
+    m_startTime = 0;
     m_animating = true;
 }
 
@@ -228,6 +229,7 @@ void ModelerUserInterface::cb_Play_Animate_Repeat_i(Fl_Menu_* o, void* v) {
     if (m_isPlayRepeat) {
         if (m_numFrames > 0) {
             m_currentFrame = 0;
+            m_startTime = 0;
             m_animating = true;
         }
     }
@@ -315,7 +317,13 @@ ModelerUserInterface::ModelerUserInterface() {
 
 void ModelerUserInterface::animationCallback(void *that) {
     ModelerUserInterface *ui = static_cast<ModelerUserInterface*>(that);
-    Fl::repeat_timeout(1.0 / ui->m_animateFps, animationCallback, that);
+    double delaySecs = 1.0 / ui->m_animateFps;
+    if (ui->m_startTime > 0) {
+        float elapsedTime = (float)(clock() - ui->m_startTime) / CLOCKS_PER_SEC;
+        delaySecs += delaySecs - elapsedTime;
+    }
+    ui->m_startTime = clock();
+    Fl::repeat_timeout(max(delaySecs, 0.001), animationCallback, that);
 
     // If it is animating now, then render the current frame
     if (ui->m_animating) {

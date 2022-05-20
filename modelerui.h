@@ -16,6 +16,7 @@
 #include <FL/Fl_Scroll.H>
 #include <FL/Fl_Pack.H>
 #include "modelerapp.h"
+#include "time.h"
 
 class ModelerUserInterface {
 public:
@@ -67,5 +68,7 @@ private:
 public:
   ModelerView *m_modelerView;
   void show();
+private:
+  clock_t m_startTime;
 };
 #endif
