@@ -75,7 +75,7 @@ public:
 	void updateMesh();
 
 	// Extra: get number of joints for the loaded model
-	int getNumJoints();
+	std::vector<Joint*> getJoints();
 
 private:
 

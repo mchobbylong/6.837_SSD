@@ -24,7 +24,7 @@ ModelerApplication *ModelerApplication::Instance()
                       new ModelerApplication());
 }
 
-void ModelerApplication::Init( int argc, char* argv[], string jointNames[] )
+void ModelerApplication::Init( int argc, char* argv[], vector<string> &defaultJointNames )
 {
     m_ui = new ModelerUserInterface();
 
@@ -53,21 +53,22 @@ void ModelerApplication::Init( int argc, char* argv[], string jointNames[] )
     const int packWidth = m_ui->m_controlsPack->w();
 
     // Determine the total number of controls
-    vector<int> numJoints = m_ui->m_modelerView->getJointsPerModel();
+    auto allJoints = m_ui->m_modelerView->getJointsPerModel();
     m_numControls = 0;
-    for (int num : numJoints)
-        m_numControls += (num + 1) * 3; // Extra control for root joint translation
+    for (auto &modelJoints : allJoints)
+        m_numControls += (modelJoints.size() + 1) * 3; // Extra control for root joint translation
 
     // Store pointers to the controls for manipulation
     m_controlLabelBoxes = new Fl_Box *[m_numControls];
     m_controlValueSliders = new Fl_Value_Slider *[m_numControls];
 
     // Initialize controls for every model
-    int controlIndex = 0, selectorIndex = 1;
+    int controlIndex = 0, selectorIndex = 1, nonameJointIndex = 1;
     m_ui->m_controlsPack->begin();
-    for (int modelIndex = 0, numModels = numJoints.size(); modelIndex < numModels; ++modelIndex) {
+    for (int modelIndex = 0, numModels = allJoints.size(); modelIndex < numModels; ++modelIndex) {
         // Note that we have an extra control for adjusting translation of the root joint, modelNumJoints is actually + 1
-        int modelNumJoints = numJoints[modelIndex] + 1;
+        auto &modelJoints = allJoints[modelIndex];
+        int modelNumJoints = modelJoints.size() + 1;
 
         // Add "root" selector (as a label only) for every model
         m_ui->m_controlsBrowser->add(argv[modelIndex + 1]);
@@ -75,16 +76,30 @@ void ModelerApplication::Init( int argc, char* argv[], string jointNames[] )
 
         // Then for each joint, add appropriate objects to the user interface
         char selectorLabel[256];
+        string jointName;
         for (int jointIndex = 0; jointIndex < modelNumJoints; ++jointIndex) {
+            // Determine the name of this joint
+            // If this is the joint for root translation, then just use the default name
+            if (jointIndex == 0)
+                jointName = defaultJointNames[0];
+            // If name is specified from the input files, then just use it
+            else if (modelJoints[jointIndex-1]->name.length() > 0)
+                jointName = modelJoints[jointIndex-1]->name;
+            // If the current joint does not match a default name, then use "noname" + number
+            else if (jointIndex > defaultJointNames.size())
+                jointName = "noname" + to_string(nonameJointIndex++);
+            else
+                jointName = defaultJointNames[jointIndex];
+
             // Add a corresponding selector for the joint, label indented by 4 spaces
-            sprintf(selectorLabel, "    %s", jointNames[jointIndex].c_str());
+            sprintf(selectorLabel, "    %s", jointName.c_str());
             m_ui->m_controlsBrowser->add(selectorLabel);
 
             // Then add 3 sliders (each wrapped in a label box) for this joint
             for (int k = 0; k < 3; ++k) {
                 // Determine name of the slider
                 char* buf = new char[256];
-                sprintf(buf, "%s: %s %c", argv[modelIndex + 1], jointNames[jointIndex].c_str(), 'X' + k);
+                sprintf(buf, "%s: %s %c", argv[modelIndex + 1], jointName.c_str(), 'X' + k);
 
                 // Add a label box (as a wrapper for the slider), make it hidden for now
                 Fl_Box *box = new Fl_Box(0, 0, packWidth, textHeight, buf);

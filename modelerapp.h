@@ -25,7 +25,7 @@ public:
     static ModelerApplication *Instance();
 
     // Initialize the application; see sample models for usage
-    void Init(int argc, char* argv[], string jointNames[]);
+    void Init(int argc, char* argv[], vector<string> &defaultJointNames);
 
     // Starts the application, returns when application is closed
     int Run();

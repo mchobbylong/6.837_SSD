@@ -3,9 +3,11 @@
 
 #include <vector>
 #include <vecmath.h>
+#include <string>
 
 struct Joint
 {
+	std::string name;
 	Matrix4f transform; // transform relative to its parent
 	std::vector< Joint* > children; // list of children
 

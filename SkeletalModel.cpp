@@ -4,9 +4,18 @@
 
 using namespace std;
 
-int SkeletalModel::getNumJoints()
+static inline void trim_string(string &s) {
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+		return !std::isspace(ch);
+	}));
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+		return !std::isspace(ch);
+	}).base(), s.end());
+}
+
+vector<Joint*> SkeletalModel::getJoints()
 {
-	return m_joints.size();
+	return m_joints;
 }
 
 void SkeletalModel::load(const char *skeletonFile, const char *meshFile, const char *attachmentsFile)
@@ -62,6 +71,10 @@ void SkeletalModel::loadSkeleton( const char* filename )
 		}
 		else
 			m_joints[parent]->children.push_back(joint);
+
+		// Read joint name. If not specified, then the name is empty
+		getline(stream, joint->name);
+		trim_string(joint->name);
 	}
 	stream.close();
 	cout << "Read joints: " << m_joints.size() << endl;

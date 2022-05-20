@@ -28,7 +28,7 @@ public:
     ModelerView(int x, int y, int w, int h, const char *label = 0);
 
     void loadModels(int argc, char* argv[]);
-    vector<int> getJointsPerModel();
+    vector<vector<Joint*>> getJointsPerModel();
 
     virtual ~ModelerView ();
 

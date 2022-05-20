@@ -39,11 +39,11 @@ void ModelerView::loadModels(int argc, char* argv[])
     }
 }
 
-vector<int> ModelerView::getJointsPerModel()
+vector<vector<Joint*>> ModelerView::getJointsPerModel()
 {
-    auto nums = vector<int>();
+    auto nums = vector<vector<Joint*>>();
     for (auto &model : models)
-        nums.push_back(model.getNumJoints());
+        nums.push_back(model.getJoints());
     return nums;
 }
 
@@ -171,7 +171,7 @@ void ModelerView::updateJoints()
         model.setRootTranslation(ret[0], ret[1], ret[2]);
 
         // Set transform (currently rotation only) of all joints
-        for (int jointIndex = 0, numJoints = model.getNumJoints(); jointIndex < numJoints; jointIndex++)
+        for (int jointIndex = 0, numJoints = model.getJoints().size(); jointIndex < numJoints; jointIndex++)
         {
             ret = app->getJointToControlValues(modelIndex, jointIndex, false);
             model.setJointTransform(jointIndex, ret[0], ret[1], ret[2]);

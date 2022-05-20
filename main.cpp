@@ -24,31 +24,40 @@ int main( int argc, char* argv[] )
 {
 	if( argc < 2 )
 	{
-		cout << "Usage: " << argv[ 0 ] << " PREFIX" << endl;
+		cout << "Usage: " << argv[ 0 ] << " PREFIX1 PREFIX2 ..." << endl;
 		cout << "For example, if you're trying to load data/cheb.skel, data/cheb.obj, and data/cheb.attach, run with: " << argv[ 0 ] << " data/cheb" << endl;
 		return -1;
 	}
 
-    // Initialize the controls.  You have to define a ModelerControl
-    // for every variable name that you define in the enumeration.
+	vector<string> jointNames = {
+		"Root (Translation)",
+		"Root",
+		"Chest",
+		"Waist",
+		"Neck",
+		"Right hip",
+		"Right leg",
+		"Right knee",
+		"Right foot",
+		"Left hip",
+		"Left leg",
+		"Left knee",
+		"Left foot",
+		"Right collarbone",
+		"Right shoulder",
+		"Right elbow",
+		"Left collarbone",
+		"Left shoulder",
+		"Left elbow"
+	};
 
-    // The constructor for a ModelerControl takes the following arguments:
-    // - text label in user interface
-    // - minimum slider value
-    // - maximum slider value
-    // - step size for slider
-    // - initial slider value
+	ModelerApplication::Instance()->Init(argc, argv, jointNames);
 
-	const int NUM_JOINTS = 19;
-	string jointNames[NUM_JOINTS]={ "Root (Translation)", "Root", "Chest", "Waist", "Neck", "Right hip", "Right leg", "Right knee", "Right foot", "Left hip", "Left leg", "Left knee", "Left foot", "Right collarbone", "Right shoulder", "Right elbow", "Left collarbone", "Left shoulder", "Left elbow" };
+	// Run the modeler application.
+	int ret = ModelerApplication::Instance()->Run();
 
-    ModelerApplication::Instance()->Init(argc, argv, jointNames);
+	// This line is reached when you close the program.
+	delete ModelerApplication::Instance();
 
-    // Run the modeler application.
-    int ret = ModelerApplication::Instance()->Run();
-
-    // This line is reached when you close the program.
-    delete ModelerApplication::Instance();
-
-    return ret;
+	return ret;
 }
