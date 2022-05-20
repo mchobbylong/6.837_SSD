@@ -38,17 +38,20 @@ private:
   static void cb_Exit(Fl_Menu_*, void*);
 public:
   static Fl_Menu_Item *m_controlsAnimOnMenu;
-private:
-  inline void cb_m_controlsAnimOnMenu_i(Fl_Menu_*, void*);
-  static void cb_m_controlsAnimOnMenu(Fl_Menu_*, void*);
-private:
   unsigned int m_animateFps;
   unsigned int m_numFrames;
+  unsigned int m_currentFrame;
+  bool m_isPlayRepeat;
+  bool m_animating;
   vector<vector<float>> m_animateFrames;
+private:
   void cb_Load_Animate_i(Fl_Menu_*, void*);
   static void cb_Load_Animate(Fl_Menu_*, void*);
+  void cb_Play_Animate_Once_i(Fl_Menu_*, void*);
   static void cb_Play_Animate_Once(Fl_Menu_*, void*);
+  void cb_Play_Animate_Repeat_i(Fl_Menu_*, void*);
   static void cb_Play_Animate_Repeat(Fl_Menu_*, void*);
+  static void animationCallback(void*);
 public:
   Fl_Browser *m_controlsBrowser;
 private:

@@ -42,9 +42,6 @@ public:
     // Extra: Check whether a control type is translation
     bool getControlIsTranslation(int controlIndex);
 
-    // [update 05/01/02]
-    bool GetAnimating();
-
     // Redraw trigger
     void redrawControlsWindow();
 
@@ -77,9 +74,6 @@ private:
 
     static void SliderCallback(Fl_Slider *, void *);
     static void RedrawLoop(void *);
-
-    // Just a flag for updates
-    bool m_animating;
 };
 
 #endif

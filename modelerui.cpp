@@ -125,13 +125,6 @@ void ModelerUserInterface::cb_Exit(Fl_Menu_* o, void* v) {
     ((ModelerUserInterface*)(o->parent()->user_data()))->cb_Exit_i(o,v);
 }
 
-inline void ModelerUserInterface::cb_m_controlsAnimOnMenu_i(Fl_Menu_*, void*) {
-    ModelerApplication::Instance()->m_animating = (m_controlsAnimOnMenu->value() == 0) ? false : true;
-}
-void ModelerUserInterface::cb_m_controlsAnimOnMenu(Fl_Menu_* o, void* v) {
-    ((ModelerUserInterface*)(o->parent()->user_data()))->cb_m_controlsAnimOnMenu_i(o,v);
-}
-
 Fl_Menu_Item ModelerUserInterface::menu_m_controlsMenuBar[] = {
     {"File", 0,  0, 0, 64, 0, 0, 14, 56},
     {"Save Bitmap File", 0,  (Fl_Callback*)ModelerUserInterface::cb_Save, 0, 128, 0, 0, 14, 56},
@@ -143,13 +136,16 @@ Fl_Menu_Item ModelerUserInterface::menu_m_controlsMenuBar[] = {
     // {"Enable", 0,  (Fl_Callback*)ModelerUserInterface::cb_m_controlsAnimOnMenu, 0, 2, 0, 0, 14, 56},
     {"Load Animation File", 0, (Fl_Callback*)ModelerUserInterface::cb_Load_Animate, 0, 128, 0, 0, 14, 56},
     {"Play Animation Once", 0, (Fl_Callback*)ModelerUserInterface::cb_Play_Animate_Once, 0, 0, 0, 0, 14, 56},
-    {"Play Animation Repeatedly", 0, (Fl_Callback*)ModelerUserInterface::cb_Play_Animate_Repeat, 0, 0, 0, 0, 14, 56},
+    {"Play Animation Repeatedly", 0, (Fl_Callback*)ModelerUserInterface::cb_Play_Animate_Repeat, 0, 2, 0, 0, 14, 56},
     {0,0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0,0}
 };
-Fl_Menu_Item* ModelerUserInterface::m_controlsAnimOnMenu = ModelerUserInterface::menu_m_controlsMenuBar + 7;
+Fl_Menu_Item* ModelerUserInterface::m_controlsAnimOnMenu = ModelerUserInterface::menu_m_controlsMenuBar + 9;
 
 void ModelerUserInterface::cb_Load_Animate_i(Fl_Menu_* o, void* v) {
+    // If playing animation now, then do nothing
+    if (m_animating) return;
+
     auto app = ModelerApplication::Instance();
     char *animFilename = fl_file_chooser("Load Animation File", "*.anim", NULL);
 
@@ -179,6 +175,7 @@ void ModelerUserInterface::cb_Load_Animate_i(Fl_Menu_* o, void* v) {
             auto &lastFrameControls = m_animateFrames.back();
             // Determine the interpolation interval for each control
             for (int i = 0; i < numControls; ++i) {
+                // If the i-th control is for root translation, then interpolate as usual
                 if (app->getControlIsTranslation(i)) {
                     frameIntervals[i] = (currentFrameControls[i] - lastFrameControls[i]) / nextFrames;
                 }
@@ -187,7 +184,9 @@ void ModelerUserInterface::cb_Load_Animate_i(Fl_Menu_* o, void* v) {
                         currentVal = currentFrameControls[i] + M_PI;
                     frameIntervals[i] = (abs(currentVal - lastVal) < 2 * M_PI - abs(currentVal - lastVal)
                         ? (currentVal - lastVal)
-                        : (currentVal - lastVal < 0 ? 2 * M_PI - currentVal + lastVal : currentVal - lastVal - 2 * M_PI)) / nextFrames;
+                        : (currentVal - lastVal < 0
+                            ? 2 * M_PI - currentVal + lastVal
+                            : currentVal - lastVal - 2 * M_PI)) / nextFrames;
                 }
             }
             // Insert interpolated frame controls
@@ -208,9 +207,38 @@ void ModelerUserInterface::cb_Load_Animate(Fl_Menu_* o, void* v) {
     ((ModelerUserInterface*)(o->parent()->user_data()))->cb_Load_Animate_i(o, v);
 }
 
-void ModelerUserInterface::cb_Play_Animate_Once(Fl_Menu_* o, void* v) {}
+void ModelerUserInterface::cb_Play_Animate_Once_i(Fl_Menu_* o, void* v) {
+    // If animation file not loaded
+    if (m_numFrames == 0) return;
 
-void ModelerUserInterface::cb_Play_Animate_Repeat(Fl_Menu_* o, void* v) {}
+    // If it is now animating, then does nothing
+    if (m_animating) return;
+
+    // Notify timer function to play animation
+    m_currentFrame = 0;
+    m_animating = true;
+}
+
+void ModelerUserInterface::cb_Play_Animate_Once(Fl_Menu_* o, void* v) {
+    ((ModelerUserInterface*)(o->parent()->user_data()))->cb_Play_Animate_Once_i(o, v);
+}
+
+void ModelerUserInterface::cb_Play_Animate_Repeat_i(Fl_Menu_* o, void* v) {
+    m_isPlayRepeat = m_controlsAnimOnMenu->value() != 0;
+    if (m_isPlayRepeat) {
+        if (m_numFrames > 0) {
+            m_currentFrame = 0;
+            m_animating = true;
+        }
+    }
+    else {
+        m_animating = false;
+    }
+}
+
+void ModelerUserInterface::cb_Play_Animate_Repeat(Fl_Menu_* o, void* v) {
+    ((ModelerUserInterface*)(o->parent()->user_data()))->cb_Play_Animate_Repeat_i(o, v);
+}
 
 inline void ModelerUserInterface::cb_m_controlsBrowser_i(Fl_Browser*, void*) {
     auto app = ModelerApplication::Instance();
@@ -278,8 +306,32 @@ ModelerUserInterface::ModelerUserInterface() {
         o->end();
     }
 
-    m_animateFps = 60;
+    m_animateFps = 30;
     m_numFrames = 0;
+    m_isPlayRepeat = m_animating = false;
+    // Set up timer function for playing animation
+    Fl::add_timeout(1.0 / m_animateFps, animationCallback, (void *)this);
+}
+
+void ModelerUserInterface::animationCallback(void *that) {
+    ModelerUserInterface *ui = static_cast<ModelerUserInterface*>(that);
+    Fl::repeat_timeout(1.0 / ui->m_animateFps, animationCallback, that);
+
+    // If it is animating now, then render the current frame
+    if (ui->m_animating) {
+        auto &controls = ui->m_animateFrames[ui->m_currentFrame];
+        auto app = ModelerApplication::Instance();
+        for (int i = 0, numControls = controls.size(); i < numControls; ++i) {
+            app->SetControlValue(i, controls[i]);
+        }
+        ui->m_modelerView->update();
+        ui->m_modelerView->redraw();
+        ui->m_currentFrame = (ui->m_currentFrame + 1) % ui->m_numFrames;
+
+        // Stop animating if the user only wants to play once, and the last frame is shown
+        if (ui->m_currentFrame == 0 && !ui->m_isPlayRepeat)
+            ui->m_animating = false;
+    }
 }
 
 void ModelerUserInterface::show() {

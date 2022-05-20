@@ -43,13 +43,9 @@ void ModelerApplication::Init( int argc, char* argv[], string jointNames[] )
     Fl_Group::current()->resizable(m_ui->m_modelerView);
     m_ui->m_modelerWindow->end();
 
-    // Initial state of animation
-    m_animating = false;
-
     // ********************************************************
     // Create the FLTK user interface
     // ********************************************************
-
 
     // Constants for user interface setup
     const int textHeight = 20;
@@ -168,11 +164,6 @@ void ModelerApplication::SetControlValue(int controlNumber, double value)
 unsigned ModelerApplication::GetNumControls()
 {
     return m_numControls;
-}
-
-bool ModelerApplication::GetAnimating()
-{
-    return m_animating;
 }
 
 void ModelerApplication::ShowControl(int controlNumber)
