@@ -32,7 +32,7 @@ Triangle faces are colored according to the numbers of binding joints of the 3 v
 
 **Configuration:**
 
-Modify [L26 of `Mesh.cpp`](Mesh.cpp#26) to use different color schemes. Possible strings after `#ifdef`:
+Modify [L26 of `Mesh.cpp`](Mesh.cpp#L26) to use different color schemes. Possible strings after `#define`:
 - `COLOR_SCHEME_1`
 - `COLOR_SCHEME_2`
 
