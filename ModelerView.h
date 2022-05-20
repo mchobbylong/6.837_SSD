@@ -44,6 +44,8 @@ public:
 
     bool m_drawAxes;
     bool m_drawSkeleton;		// if false, the mesh is drawn instead.
+
+    bool m_drawColor;   // coloring Joints
 };
 
 

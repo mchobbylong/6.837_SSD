@@ -101,10 +101,37 @@ int ModelerView::handle( int event )
                 m_drawAxes = !m_drawAxes;
                 cout << "drawAxes is now: " << m_drawAxes << endl;
             }
-            else if( key == 's' )
+            // added the color trigger
+            else if (key == 'c')
+            {
+                if (m_drawSkeleton == 0) {
+                    m_drawColor = !m_drawColor;
+                    if (m_drawColor) {
+                        glEnable(GL_COLOR_MATERIAL);
+                    }
+                    else {
+                        glDisable(GL_COLOR_MATERIAL);
+                    }
+                }
+                else {
+                    glDisable(GL_COLOR_MATERIAL);
+                }
+            }
+            else if (key == 's')
             {
                 m_drawSkeleton = !m_drawSkeleton;
                 cout << "drawSkeleton is now: " << m_drawSkeleton << endl;
+                if (m_drawSkeleton == 0) {
+                    if (m_drawColor) {
+                        glEnable(GL_COLOR_MATERIAL);
+                    }
+                    else {
+                        glDisable(GL_COLOR_MATERIAL);
+                    }
+                }
+                else {
+                    glDisable(GL_COLOR_MATERIAL);
+                }
             }
         }
         break;
